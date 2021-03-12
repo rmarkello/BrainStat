@@ -83,3 +83,49 @@ def matlab_T(slm, contrast):
     for key in slm_MAT.keys():
         slm_py[key] = np.array(slm_MAT[key])
     return slm_py
+
+
+def matlab_LinMod(Y, M, surf=None, niter=1, thetalim=0.01, drlim=0.1):
+    # ==> SurfStatLinMod.m <==
+    from brainstat.stats.terms import Term
+    from brainspace.mesh.mesh_elements import get_cells
+    from brainspace.vtk_interface.wrappers.data_object import BSPolyData
+
+    if isinstance(Y, np.ndarray):
+        Y = matlab.double(Y.tolist())
+    else:
+        Y = surfstat_eng.double(Y)
+
+    if isinstance(M, np.ndarray):
+        M = {'matrix': matlab.double(M.tolist())}
+
+    elif isinstance(M, Term):
+        M = surfstat_eng.term(matlab.double(M.matrix.values.tolist()),
+                              M.matrix.columns.tolist())
+    else:  # Random
+        M1 = matlab.double(M.mean.matrix.values.tolist())
+        V1 = matlab.double(M.variance.matrix.values.tolist())
+
+        M = surfstat_eng.random(V1, M1, surfstat_eng.cell(0),
+                                surfstat_eng.cell(0), 1)
+
+    # Only require 'tri' or 'lat'
+    if surf is None:
+        k = None
+        surf = surfstat_eng.cell(0)
+    else:
+        if isinstance(surf, BSPolyData):
+            surf = {'tri': np.array(get_cells(surf))+1}
+        k = 'tri' if 'tri' in surf else 'lat'
+        s = surf[k]
+        surf = {k: matlab.int64(s.tolist())}
+
+    slm = surfstat_eng.SurfStatLinMod(Y, M, surf, niter, thetalim, drlim)
+    for key in ['SSE', 'coef']:
+        if key not in slm:
+            continue
+        slm[key] = np.atleast_2d(slm[key])
+    slm = {k: v if np.isscalar(v) else np.array(v) for k, v in slm.items()}
+
+    return slm
+

@@ -1,8 +1,11 @@
 import numpy as np
 import pytest
+from scipy.io import loadmat
 import brainstat.tests.surstat_wrap as sw
 from brainstat.stats.SLM import SLM, f_test
+from brainstat.stats._t_test import t_test
 from brainstat.stats.terms import Term
+
 
 sw.matlab_init_surfstat()
 
@@ -266,3 +269,103 @@ def test_09():
 
     dummy_test(slm1, slm2)
 
+
+def test_10():
+    fname = './data_OFF/thickness_slm.mat'
+    f = loadmat(fname)
+    slm1 = {}
+    slm1['X'] = f['slm']['X'][0, 0]
+    slm1['df'] = f['slm']['df'][0, 0][0, 0]
+    slm1['coef'] = f['slm']['coef'][0, 0]
+    slm1['SSE'] = f['slm']['SSE'][0, 0]
+    slm1['tri'] = f['slm']['tri'][0, 0]
+    slm1['resl'] = f['slm']['resl'][0, 0]
+    AGE = f['slm']['AGE'][0, 0]
+
+    # run python t-test function
+    Python_slm = SLM(Term(1), Term(1))
+    for key in slm1.keys():
+        setattr(Python_slm, key, slm1[key])
+    setattr(Python_slm, 'AGE', AGE)
+    t_test(Python_slm)
+
+    slm2 = slm1.copy()
+    slm2['t'] = getattr(Python_slm, 't') + np.random.rand()
+
+    dummy_test(slm1, slm2)
+
+
+def test_11():
+    fname = './data_OFF/thickness_slm.mat'
+    f = loadmat(fname)
+    slm = {}
+    slm['X'] = f['slm']['X'][0, 0]
+    slm['df'] = f['slm']['df'][0, 0][0, 0]
+    slm['coef'] = f['slm']['coef'][0, 0]
+    slm['SSE'] = f['slm']['SSE'][0, 0]
+    slm['tri'] = f['slm']['tri'][0, 0]
+    slm['resl'] = f['slm']['resl'][0, 0]
+    AGE = f['slm']['AGE'][0, 0]
+
+    # run python t-test function
+    Python_slm = SLM(Term(1), Term(1))
+    for key in slm.keys():
+        setattr(Python_slm, key, slm[key])
+    setattr(Python_slm, 'AGE', AGE)
+    t_test(Python_slm)
+
+    slm1 = slm.copy()
+    slm1['X'] = getattr(Python_slm, 'X') + 2
+    slm1['t'] = getattr(Python_slm, 't') + 0.2
+    slm1['df'] = getattr(Python_slm, 'df') + 2
+    slm1['coef'] = getattr(Python_slm, 'coef') + 0.2
+
+    dummy_test(slm, slm1)
+
+
+def test_12():
+    fname = './data_OFF/sofopofo1.mat'
+    f = loadmat(fname)
+
+    Y = f['sofie']['T'][0, 0]
+
+    params = f['sofie']['model'][0, 0]
+    colnames = ['1', 'ak', 'female', 'male', 'Affect', 'Control1',
+                'Perspective', 'Presence', 'ink']
+    M = Term(params, colnames)
+
+    SW = {}
+    SW['tri'] = f['sofie']['SW'][0, 0]['tri'][0, 0]
+
+
+    ### slm = SurfStatLinMod(Y, M, SW) ###
+
+    Py_slm = SLM(M, Term(1))
+    Py_slm.surf = {"tri": SW["tri"]}
+    Py_slm.linear_model(Y)
+
+
+    ### slm = SurfStatT(slm, contrast) ###
+
+
+    contrast = np.array([[37], [41], [24], [37], [26], [28], [44], [26], [22],
+                         [32], [34], [33], [35], [25], [22], [27], [22], [29],
+                         [29], [24]])
+
+    setattr(Py_slm, 'contrast', contrast)
+
+    t_test(Py_slm)
+
+    slm1 = {}
+    slm1['X'] = getattr(Py_slm, 'X')
+    slm1['df'] = getattr(Py_slm, 'df')
+    slm1['coef'] = getattr(Py_slm, 'coef')
+    slm1['SSE'] = getattr(Py_slm, 'SSE')
+    slm1['tri'] = getattr(Py_slm, 'tri')
+    slm1['resl'] = getattr(Py_slm, 'resl')
+    slm1['t'] = getattr(Py_slm, 't')
+
+    slm2 = slm1.copy()
+    slm2['t'] = slm1['t'] + np.random.rand()
+
+    dummy_test(slm1, slm2)

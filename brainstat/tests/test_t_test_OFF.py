@@ -130,7 +130,84 @@ def test_06():
     dummy_test(slm, -1*AGE)
 
 
+def test_07():
+    fname = './data_OFF/thickness.mat'
+    f = loadmat(fname)
+    A = f['T']
+    np.random.shuffle(A)
+
+    AGE = Term(np.array(f['AGE']), 'AGE')
+    B = 1 + AGE
+    surf = {}
+    surf['tri'] = f['tri']
+    surf['coord'] = f['coord']
+
+    ### slm = SurfStatLinMod(A, B, surf) ###
+
+    Py_slm = SLM(B, Term(1))
+    Py_slm.surf = {"tri": surf["tri"]}
+    Py_slm.linear_model(A)
+
+    contrast = np.array(f['AGE']).T
+
+    slm = {}
+    slm['X'] = getattr(Py_slm, 'X')
+    slm['df'] = getattr(Py_slm, 'df')
+    slm['coef'] = getattr(Py_slm, 'coef')
+    slm['SSE'] = getattr(Py_slm, 'SSE')
+    slm['tri'] = getattr(Py_slm, 'tri')
+    slm['resl'] = getattr(Py_slm, 'resl')
+
+    dummy_test(slm, contrast)
 
 
+def test_08():
+    fname = './data_OFF/sofopofo1_slm.mat'
+    f = loadmat(fname)
+    slm = {}
+    slm['X'] = f['slm']['X'][0, 0]
+    slm['df'] = f['slm']['df'][0, 0][0, 0]
+    slm['coef'] = f['slm']['coef'][0, 0]
+    slm['SSE'] = f['slm']['SSE'][0, 0]
+    slm['tri'] = f['slm']['tri'][0, 0]
+    slm['resl'] = f['slm']['resl'][0, 0]
 
+    contrast = np.random.randint(20, 50, size=(slm['X'].shape[0], 1))
+
+    dummy_test(slm, contrast)
+
+
+def test_09():
+    fname = './data_OFF/sofopofo1.mat'
+    f = loadmat(fname)
+    T = f['sofie']['T'][0, 0]
+
+    params = f['sofie']['model'][0, 0]
+    colnames = ['1', 'ak', 'female', 'male', 'Affect', 'Control1',
+                'Perspective', 'Presence', 'ink']
+
+    M = Term(params, colnames)
+
+    SW = {}
+    SW['tri'] = f['sofie']['SW'][0, 0]['tri'][0, 0]
+    SW['coord'] = f['sofie']['SW'][0, 0]['coord'][0, 0]
+
+
+    ### slm = SurfStatLinMod(T, M, SW) ###
+
+    Py_slm = SLM(M, Term(1))
+    Py_slm.surf = {"tri": SW["tri"]}
+    Py_slm.linear_model(T)
+
+    slm = {}
+    slm['X'] = getattr(Py_slm, 'X')
+    slm['df'] = getattr(Py_slm, 'df')
+    slm['coef'] = getattr(Py_slm, 'coef')
+    slm['SSE'] = getattr(Py_slm, 'SSE')
+    slm['tri'] = getattr(Py_slm, 'tri')
+    slm['resl'] = getattr(Py_slm, 'resl')
+
+    contrast = np.random.randint(20, 50, size=(Py_slm.X.shape[0], 1))
+
+    dummy_test(slm, contrast)
 
