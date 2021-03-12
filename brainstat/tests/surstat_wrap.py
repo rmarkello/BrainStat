@@ -35,9 +35,8 @@ def matlab_Edg(surf):
     return np.array(edg)
 
 
-# ==> SurfStatF.m <==
 def matlab_F(slm1, slm2):
-
+    # ==> SurfStatF.m <==
     slm1_mat = slm1.copy()
     for key in slm1_mat.keys():
         if isinstance(slm1_mat[key], np.ndarray):
@@ -66,3 +65,21 @@ def matlab_F(slm1, slm2):
     for key in result_mat:
         result_mat_dic[key] = np.array(result_mat[key])
     return result_mat_dic
+
+
+def matlab_T(slm, contrast):
+    # ==> SurfStatT.m <==
+    slm_mat = slm.copy()
+    for key in slm_mat.keys():
+        if np.ndim(slm_mat[key]) == 0:
+            slm_mat[key] = surfstat_eng.double(slm_mat[key].item())
+        else:
+            slm_mat[key] = matlab.double(slm_mat[key].tolist())
+
+    contrast = matlab.double(contrast.tolist())
+
+    slm_MAT = surfstat_eng.SurfStatT(slm_mat, contrast)
+    slm_py = {}
+    for key in slm_MAT.keys():
+        slm_py[key] = np.array(slm_MAT[key])
+    return slm_py
